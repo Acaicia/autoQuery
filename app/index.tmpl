@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>AutoQuery</title>
+            
+            <!-- Bootstrap CSS --> <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+            <!-- Vue.js --> <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+            <!-- jQuery --> <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+            <!-- Bootstrap JS --> <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+        </head>
+        <body>
+
+
+    <!-- THIS IS THE TOP OF THE PAGE SPECIFIC HTML/JS-->
+
+        <div id="app">
+            <form id="searchForm">
+            <input type="text" id="query" placeholder="Search for videos...">
+            <button type="submit">Search</button>
+            </form>
+            <table class="table">
+            <thead>
+                <tr>
+                <th scope="col">Platform</th>
+                <th scope="col">Title</th>
+                <th scope="col">Thumbnail</th>
+                <th scope="col">View Count</th>
+                <th scope="col">Like Count</th>
+                <th scope="col">Comment Count</th>
+                <th scope="col">Upload Date</th>
+                <th scope="col">Action</th>
+                </tr>
+            </thead>
+            <tbody id="results">
+                <tr v-for="result in results">
+                    <td v-text="result.platform"></td>
+                    <td v-text="result.title"></td>
+                    <td><img :src="result.thumbnail_url" width="100"></td>
+                    <td v-text="result.views"></td>
+                    <td v-text="result.likes"></td>
+                    <td v-text="result.comments"></td>
+                    <td v-text="result.upload_date"></td>
+                    <td><a :href="result.url" target="_blank">Open</a></td>
+                </tr>
+            </tbody>    
+            </table>
+        </div>
+
+        <script>
+
+        /* THIS IS THE TOP OF THE JAVASCRIPT */
+        $(document).ready(function () {
+            const app = new Vue({
+                el: '#app',
+                data: {
+                    results: []
+                }
+            });
+            $('#searchForm').on('submit', function (event) {
+                event.preventDefault();
+                let query = $('#query').val();
+
+                console.log("Submitting search query:", query);
+
+                $.ajax({
+                    url: '/search',
+                    type: 'POST',
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        query: query
+                    }),
+                    success: function (data) {
+                        console.log("Search results:", data);
+                        app.results = data;
+
+                    },
+                    error: function (error) {
+                        console.error("Error:", error);
+                    }
+                });
+            });
+            
+        });
+
+        </script>
+    <!-- THIS IS THE BOTTOM OF THE PAGE SPECIFIC HTML/JS-->
+
+    </body>
+</html>
