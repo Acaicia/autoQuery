@@ -11,10 +11,12 @@ import (
 
 type twitchResponse struct {
 	Data []struct {
-		DisplayName string `json:"display_name"`
-		URL         string `json:"url"`
+		DisplayName      string `json:"display_name"`
+		URL              string `json:"url"`
+		BroadcasterLogin string `json:"broadcaster_login"`
 	} `json:"data"`
 }
+
 
 func SearchTwitch(query string, credentials credentials.Credentials) []c.SearchResult {
 	twitchAPIKey := credentials.TwitchAPIKey
@@ -54,6 +56,7 @@ func SearchTwitch(query string, credentials credentials.Credentials) []c.SearchR
 			Views:        0,   // Add an appropriate views count
 			Comments:     0,   // Add an appropriate comments count
 			UploadDate:   time.Time{}, // Add an appropriate upload date
+			Uploader:     item.BroadcasterLogin,
 		})
 	}
 

@@ -24,6 +24,7 @@ type YouTubeResponse struct {
 					URL string `json:"url"`
 				} `json:"default"`
 			} `json:"thumbnails"`
+			ChannelTitle string `json:"channelTitle"`
 		} `json:"snippet"`
 	} `json:"items"`
 }
@@ -39,10 +40,7 @@ type YouTubeVideoResponse struct {
 }
 
 func SearchYouTube(query string, apiKey string) []c.SearchResult {
-
-	fmt.Println("SEARCH YOUTUBE WAS CALLED")
-
-	searchURL := fmt.Sprintf("https://www.googleapis.com/youtube/v3/search?part=snippet&q=%s&maxResults=10&key=%s&type=video", url.QueryEscape(query), apiKey)
+	searchURL := fmt.Sprintf("https://www.googleapis.com/youtube/v3/search?part=snippet&q=%s&maxResults=1000&key=%s&type=video", url.QueryEscape(query), apiKey)
 
 	resp, err := http.Get(searchURL)
 	if err != nil {
@@ -88,6 +86,7 @@ func SearchYouTube(query string, apiKey string) []c.SearchResult {
 			Views:        views,
 			Comments:     comments,
 			UploadDate:   uploadDate,
+			Uploader:     item.Snippet.ChannelTitle,
 		})
 	}
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
     c "autoQuery/common"
     cred "autoQuery/credentials"
 )
@@ -20,8 +21,18 @@ type RedditAccessToken struct {
 type RedditData struct {
 	Data struct {
 		Children []struct {
-			Data c.SearchResult `json:"data"`
+			Data struct {
+				Title        string  `json:"title"`
+				URL          string  `json:"url"`
+				ThumbnailURL string  `json:"thumbnail"`
+				Score        int     `json:"score"`
+				NumComments  int     `json:"num_comments"`
+				Created      float64 `json:"created_utc"`
+				Author       string  `json:"author"`
+				IsVideo      bool    `json:"is_video"`
+			} `json:"data"`
 		} `json:"children"`
+		After string `json:"after"`
 	} `json:"data"`
 }
 
@@ -69,34 +80,57 @@ func getRedditAccessToken(creds cred.Credentials) (string, error) {
 	return accessToken.AccessToken, nil
 }
 
-func SearchReddit(query string, creds cred.Credentials) ([]c.SearchResult, error) {
-	accessToken, err := getRedditAccessToken(creds)
+func SearchReddit(query string, page int, credentials cred.Credentials) ([]c.SearchResult, error) {
+	accessToken, err := getRedditAccessToken(credentials)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Reddit access token: %v", err)
 	}
 
-	apiURL := fmt.Sprintf("https://oauth.reddit.com/search.json?q=%s&type=video&limit=10", url.QueryEscape(query))
-	headers := map[string]string{
-		"Authorization": "Bearer " + accessToken,
-		"User-Agent":    "VideoSearch/0.1 by YourUsername",
-	}
-	data, err := fetchRedditData(apiURL, headers)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch Reddit data: %v", err)
-	}
+	var results []c.SearchResult
+	after := ""
 
-	var redditData RedditData
-	err = parseJSONResponse(data, &redditData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse Reddit data: %v", err)
-	}
+	for {
+		apiURL := fmt.Sprintf("https://oauth.reddit.com/search.json?q=%s&type=link&limit=100&after=%s", url.QueryEscape(query), after)
+		headers := map[string]string{
+			"Authorization": "Bearer " + accessToken,
+			"User-Agent":    "VideoSearch/0.1 by YourUsername",
+		}
+		data, err := fetchRedditData(apiURL, headers)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch Reddit data: %v", err)
+		}
 
-	results := make([]c.SearchResult, 0, len(redditData.Data.Children))
-	for _, child := range redditData.Data.Children {
-		results = append(results, child.Data)
+		var redditData RedditData
+		err = parseJSONResponse(data, &redditData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse Reddit data: %v", err)
+		}
+
+		for _, post := range redditData.Data.Children {
+			result := c.SearchResult{
+				Platform:     "Reddit",
+				Title:        post.Data.Title,
+				URL:          post.Data.URL,
+				ThumbnailURL: post.Data.ThumbnailURL,
+				Views:        int64(post.Data.Score),
+				Likes:        int64(post.Data.Score),
+				Comments:     int64(post.Data.NumComments),
+				UploadDate:   time.Unix(int64(post.Data.Created), 0),
+				Uploader:     post.Data.Author,
+			}
+			results = append(results, result)
+		}
+
+		// Check if there are more results to fetch
+		if redditData.Data.After != "" {
+			after = redditData.Data.After
+		} else {
+			break
+		}
+
+		// Optional: add a delay to avoid hitting the rate limits
+		time.Sleep(2 * time.Second)
 	}
 
 	return results, nil
 }
-
-

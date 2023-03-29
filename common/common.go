@@ -20,4 +20,5 @@ type SearchResult struct {
 	Views        int64     `json:"views"`
 	Comments     int64     `json:"comments"`
 	UploadDate   time.Time `json:"upload_date"`
+	Uploader     string    `json:"uploader"`
 }
